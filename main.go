@@ -12,7 +12,7 @@ type Rsvp struct {
 }
 
 var responses = make([]*Rsvp, 0, 10)
-var templates = make(map[string]*template.Template, 3)
+var templates = make(map[string]*template.Template, 5)
 
 func loadTemplates() {
 	templateNames := [5]string{"welcome", "form", "thanks", "sorry", "list"}
@@ -27,11 +27,11 @@ func loadTemplates() {
 	}
 }
 
-func welcomeHandler(writer http.ResponseWriter, request *http.Request) {
-	templates["welcome"].Execute(writer, nil)
+func welcomeHandler(w http.ResponseWriter, r *http.Request) {
+	templates["welcome"].Execute(w, nil)
 }
-func listHandler(writer http.ResponseWriter, request *http.Request) {
-	templates["list"].Execute(writer, responses)
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	templates["list"].Execute(w, responses)
 }
 
 type formData struct {
@@ -39,18 +39,18 @@ type formData struct {
 	Errors []string
 }
 
-func formHandler(writer http.ResponseWriter, request *http.Request) {
-	if request.Method == http.MethodGet {
-		templates["form"].Execute(writer, formData{
+func formHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		templates["form"].Execute(w, formData{
 			Rsvp: &Rsvp{}, Errors: []string{},
 		})
-	} else if request.Method == http.MethodPost {
-		request.ParseForm()
+	} else if r.Method == http.MethodPost {
+		r.ParseForm()
 		responseData := Rsvp{
-			Name:       request.Form["name"][0],
-			Email:      request.Form["email"][0],
-			Phone:      request.Form["phone"][0],
-			WillAttend: request.Form["willattend"][0] == "true",
+			Name:       r.Form["name"][0],
+			Email:      r.Form["email"][0],
+			Phone:      r.Form["phone"][0],
+			WillAttend: r.Form["willattend"][0] == "true",
 		}
 		errors := []string{}
 		if responseData.Name == "" {
@@ -63,15 +63,15 @@ func formHandler(writer http.ResponseWriter, request *http.Request) {
 			errors = append(errors, "Please enter your phone number")
 		}
 		if len(errors) > 0 {
-			templates["form"].Execute(writer, formData{
+			templates["form"].Execute(w, formData{
 				Rsvp: &responseData, Errors: errors,
 			})
 		} else {
 			responses = append(responses, &responseData)
 			if responseData.WillAttend {
-				templates["thanks"].Execute(writer, responseData.Name)
+				templates["thanks"].Execute(w, responseData.Name)
 			} else {
-				templates["sorry"].Execute(writer, responseData.Name)
+				templates["sorry"].Execute(w, responseData.Name)
 			}
 		}
 	}
